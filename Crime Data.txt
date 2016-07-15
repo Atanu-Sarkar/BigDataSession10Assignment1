@@ -1,0 +1,27 @@
+crime_data = LOAD 'Crimes_-_2001_to_present.csv' USING PigStorage(',') AS (ID:int,CaseNumber:chararray,Date:Datetime,Block:chararray,IUCR:int,PrimaryType:chararray,Description:chararray,LocationDescription:chararray,Arrest:Boolean,Domestic:Boolean,Beat:int,District:int,Ward:int,CommunityArea:int,FBICode:chararray,XCoordinate:int,YCoordinate:int,Year:int,UpdatedOn:Datetime,Latitude:float,Longitude:float,Location:chararray);
+
+grouped_crime_data_fbicode = group crime_data by FBICode;
+grouped_crime_data_fbicode_count = foreach grouped_crime_data_fbicode generate group, COUNT(crime_data);
+dump grouped_crime_data_fbicode_count;
+---------------------------------------------------------------------
+my_data = LOAD '/data/customers' using PigStorage()as (name:chararray, age:int, eye_color:chararray, height:int);
+by_age = GROUP my_data BY age;
+age_counts = FOREACH by_age GENERATE group as age,  -- the key you grouped on
+COUNT(my_data), -- the number of people with this age
+MAX(my_data.height); -- the maximum height of people with this age
+---------------------------------------------------------------------
+crime_data_fbi_32 = filter crime_data by FBICode=='32';
+crime_data_w_one = foreach crime_data_fbi_32 generate 1 as one;
+crime_data_group = group crime_data_w_one all;
+crime_data_count = foreach crime_data_group generate SUM(crime_data_w_one.one);
+dump crime_data_count;
+------------------------------------------------------------------------
+filter_crime_data_Arrested = filter crime_data by Arrest==True and PrimaryType =='theft';
+grouped_crime_data_distict = group filter_crime_data_Arrested by District;
+grouped_crime_data_distict_count = foreach grouped_crime_data_distict generate group, COUNT(filter_crime_data_Arrested);
+
+-----------------------------------------------------------------------
+filter_crime_data_Arrested = filter crime_data by Arrest==True;
+filter_crime_data_Arrested_daterange = filter filter_crime_data_Arrested by ToDate(Date,'mm/dd/yyyy hh:mm:ss aaa') > ToDate('09/30/2014 11:59:59 PM','mm/dd/yyyy hh:mm:ss aaa') AND ToDate(Date,'mm/dd/yyyy hh:mm:ss aaa') < ToDate('10/31/2015 11:59:59 PM','mm/dd/yyyy hh:mm:ss aaa');
+count_arrested_daterange = foreach filter_crime_data_Arrested_daterange generate group,count(filter_crime_data_Arrested);
+
